@@ -115,7 +115,7 @@ pitwall/
 
 ## Roadmap
 
-- [ ] OpenF1 API integration for live race data
+- [ ] API integration for live race data
 - [ ] Per-lap fastest sector times
 - [ ] Driver head-to-head comparison endpoint
 - [ ] Redis queue for persistence across restarts
