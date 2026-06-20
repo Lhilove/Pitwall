@@ -190,6 +190,7 @@ func (h *TelemetryHandler) WorkerStats(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"processed_records": workers.ProcessedRecords.Load()})
 }
 
+// ServeWs upgrades the HTTP connection to a WebSocket and registers the client with the WebSocket hub
 func (h *TelemetryHandler) ServeWs(c *gin.Context) {
 	var upgrader = gorilla.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
@@ -201,4 +202,24 @@ func (h *TelemetryHandler) ServeWs(c *gin.Context) {
 	client := &websocket.Client{Hub: hub, Conn: conn, Send: make(chan []byte, 256)}
 	hub.Register <- client // Register the client with the hub
 	go client.WritePump()
+}
+
+// this is the http handler for comparing two drivers based on their telemetry statistics
+func (h *TelemetryHandler) CompareDrivers(c *gin.Context) {
+	driverA := c.Query("b")
+	driverB := c.Query("a")
+
+	if driverA == "" || driverB == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "both driver parameters are required"})
+		return
+	}
+
+	statsA, statsB, err := h.service.CompareDrivers(driverA, driverB)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"driverA": statsA, "driverB": statsB})
 }

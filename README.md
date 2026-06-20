@@ -1,6 +1,6 @@
 # Pitwall 🏎️
 
-A real-time F1 telemetry backend built with Go. Ingests, processes, and streams live driver telemetry data via WebSockets.
+A real-time F1 telemetry backend built with Go. Ingests, processes, and streams live driver telemetry data via WebSockets — fed by real session data from FastF1.
 
 ## Features
 
@@ -9,8 +9,10 @@ A real-time F1 telemetry backend built with Go. Ingests, processes, and streams 
 - Background worker pool for async processing
 - Buffered queue for handling telemetry bursts
 - Driver leaderboard and aggregated stats
+- Driver-to-driver comparison endpoint
 - Paginated telemetry with sorting support
 - Built-in race simulator for testing
+- Python feeder script pulling real session data from FastF1
 
 ## Tech Stack
 
@@ -18,6 +20,7 @@ A real-time F1 telemetry backend built with Go. Ingests, processes, and streams 
 - **PostgreSQL** (storage)
 - **Gorilla WebSocket** (real-time feed)
 - **Docker** (database)
+- **Python + FastF1** (live data feeder)
 
 ## Getting Started
 
@@ -58,22 +61,23 @@ go run cmd/main.go
 
 ### Telemetry
 
-| Method | Endpoint                 | Description                                            |
-|--------|----------                |-------------                                           |
-| `POST` | `/telemetry`             | Submit a telemetry record                              |
-| `GET`  | `/telemetry`             | Get all telemetry (filter by `?driver=`)               |
-| `GET`  | `/telemetry/all`         | Paginated telemetry (`?page=&limit=&sort=&order=`)     |
-| `GET`  | `/telemetry/stats`       | Aggregated stats (avg speed, max speed, total records) |
-| `GET`  | `/telemetry/leaderboard` | Driver leaderboard by average speed                    |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/telemetry` | Submit a telemetry record |
+| `GET` | `/telemetry` | Get all telemetry (filter by `?driver=`) |
+| `GET` | `/telemetry/all` | Paginated telemetry (`?page=&limit=&sort=&order=`) |
+| `GET` | `/telemetry/stats` | Aggregated stats (avg speed, max speed, total records) |
+| `GET` | `/telemetry/leaderboard` | Driver leaderboard by average speed |
+| `GET` | `/telemetry/compare?a=&b=` | Compare aggregated stats between two drivers |
 
 ### System
 
-| Method | Endpoint       | Description                                            |
-|--------|----------      |-------------                                           |
-| `POST` | `/simulate`    | Start a telemetry simulation (500 records, Verstappen) |
-| `GET`  | `/queue/stats` | Queue length and capacity                              |
-| `GET`  | `/metrics`     | Total processed records by workers                     |
-| `GET`  | `/ws`          | WebSocket endpoint for live telemetry feed             |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/simulate` | Start a telemetry simulation (500 records, Verstappen) |
+| `GET` | `/queue/stats` | Queue length and capacity |
+| `GET` | `/metrics` | Total processed records by workers |
+| `GET` | `/ws` | WebSocket endpoint for live telemetry feed |
 
 ### Telemetry Payload
 
@@ -92,6 +96,26 @@ go run cmd/main.go
 
 Connect to `ws://localhost:8080/ws` to receive live telemetry as JSON the moment each record is processed and saved.
 
+```js
+const ws = new WebSocket("ws://localhost:8080/ws")
+ws.onmessage = (e) => console.log(JSON.parse(e.data))
+```
+
+## Live data feed (FastF1)
+
+A small Python sidecar (`feeder.py`) pulls real session data using [FastF1](https://github.com/theOehrly/Fast-F1) and streams it into the Go backend via the `/telemetry` endpoint — no changes needed on the Go side.
+
+```bash
+pip install fastf1 requests
+mkdir cache
+python feeder.py
+```
+
+The feeder loads a real race session, walks through each driver's lap-by-lap car data, and POSTs sampled telemetry points with a small delay so it streams in like a live broadcast rather than dumping all at once.
+
+```
+FastF1 (Python) → POST /telemetry → Go queue → worker → PostgreSQL + WebSocket broadcast
+```
 
 ## Project Structure
 
@@ -109,14 +133,15 @@ pitwall/
 │   ├── websocket/
 │   └── workers/
 ├── Simulator/
+├── feeder.py
 ├── docker-compose.yml
 └── .env
 ```
 
 ## Roadmap
 
-- [ ] API integration for live race data
+- [x] OpenF1 / FastF1 integration for real race data
+- [x] Driver head-to-head comparison endpoint
 - [ ] Per-lap fastest sector times
-- [ ] Driver head-to-head comparison endpoint
 - [ ] Redis queue for persistence across restarts
 - [ ] Live telemetry dashboard frontend

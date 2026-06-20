@@ -54,3 +54,18 @@ func (s *TelemetryService) GetPaginated(limit int, offset int, sort string, orde
 func (s *TelemetryService) ServeWs(hub string) {
 	// This will be implemented in the handler to avoid circular dependencies
 }
+
+func (s *TelemetryService) CompareDrivers(a string, b string) (models.TelemetryStats, models.TelemetryStats, error) {
+	// This method will be implemented to compare telemetry statistics for a driver against another driver
+	statsA, err := s.repo.GetDriverComparison(a)
+	if err != nil {
+		return statsA, models.TelemetryStats{}, err
+	}
+
+	statsB, err := s.repo.GetDriverComparison(b)
+	if err != nil {
+		return models.TelemetryStats{}, statsB, err
+	}
+
+	return statsA, statsB, nil
+}

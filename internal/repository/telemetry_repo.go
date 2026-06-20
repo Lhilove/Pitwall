@@ -256,3 +256,27 @@ func (r *TelemetryRepository) GetPaginated(limit int, offset int, sort string, o
 
 	return telemetry, nil
 }
+
+// GetDriverComparison retrieves aggregated statistics for comparing two drivers
+func (r *TelemetryRepository) GetDriverComparison(driver1 string) (models.TelemetryStats, error) {
+
+	query := `
+		SELECT
+			driver,
+			AVG(speed),
+			MAX(speed),
+			COUNT(*)
+		FROM telemetry
+		WHERE driver = $1
+	`
+
+	var stats models.TelemetryStats
+
+	err := r.DB.QueryRow(query, driver1).Scan(
+		&stats.AverageSpeed,
+		&stats.MaxSpeed,
+		&stats.TotalRecords,
+	)
+
+	return stats, err
+}
