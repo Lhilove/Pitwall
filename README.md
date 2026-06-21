@@ -140,8 +140,8 @@ pitwall/
 
 ## Roadmap
 
-- [x] OpenF1 / FastF1 integration for real race data
-- [x] Driver head-to-head comparison endpoint
-- [ ] Per-lap fastest sector times
-- [ ] Redis queue for persistence across restarts
-- [ ] Live telemetry dashboard frontend
+-  OpenF1 / FastF1 integration for real race data
+-  Driver head-to-head comparison endpoint
+-  Per-lap fastest sector times
+-  Redis queue for persistence across restarts
+-  Live telemetry dashboard frontend
